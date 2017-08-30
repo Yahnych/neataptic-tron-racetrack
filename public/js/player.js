@@ -72,7 +72,7 @@ Player.prototype = {
       })
       
     } else {
-      if(this.brain.physicallyStuckCount >= 5){
+      if(this.brain.physicallyStuckCount >= 15){
         var that = this
         findRandomOnTrackPosition(function(result){
           // Limit position to width and height
@@ -112,6 +112,8 @@ Player.prototype = {
     this.y = newPos.y
     this.vx = newPos.vx
     this.vy = newPos.vy
+    this.ax = newPos.ax
+    this.ay = newPos.ay
   },
   getScore: function(){
     return this.brain.score
@@ -122,16 +124,18 @@ Player.prototype = {
 
   /** Calculate fitness of this players genome **/
   score: function(){
-    var angle = angleToPoint(this.x, this.y, $('#field').width()/2, $('#field').height()/2) + HALF_PI;
+    var angle = angleToPoint(this.x, this.y, $('#field').width()/2, $('#field').height()/2) / TWO_PI;
 
     //var dist = distance(this.x, this.y, walker.x, walker.y);
     //console.log(angle, this.brain.lastAngle)
     if(!isNaN(this.brain.lastAngle) && !isNaN(angle)){
-      var scoreDelta = (angle - this.brain.lastAngle) * 100
+      var scoreDelta = (angle - this.brain.lastAngle)
       //console.log(scoreDelta)
-      this.brain.score += scoreDelta
-
+      if(scoreDelta > 0){
+        this.brain.score += scoreDelta
+      }
       this.brain.lastAngle = angle
+
       //if(this.brain.score <= 0) this.brain.score = 0
     }
 
@@ -170,10 +174,12 @@ Player.prototype = {
   detect: function(){
     //var dist = Math.sqrt(this.x, this.y, walker.x, walker.y) / Math.sqrt(WIDTH**2 + HEIGHT**2);
     var heading = angleToPoint(this.x, this.y, this.vx, this.vy) / TWO_PI;
-    var thisX = this.x
-    var thisY = this.y
-    var vx = (this.vx + MAX_SPEED) / MAX_SPEED;
-    var vy = (this.vy + MAX_SPEED) / MAX_SPEED;
+    var thisX = this.x / $(window).width()
+    var thisY = this.y / $(window).width()
+    //var vx = (this.vx + MAX_SPEED) / MAX_SPEED;
+    var vx = this.vx / MAX_SPEED
+    //var vy = (this.vy + MAX_SPEED) / MAX_SPEED;
+    var vy = this.vy / MAX_SPEED
     //var tvx = (walker.vx + MAX_SPEED) / MAX_SPEED;
     //var tvy = (walker.vy + MAX_SPEED) / MAX_SPEED;
 

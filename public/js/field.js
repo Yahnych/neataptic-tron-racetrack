@@ -150,8 +150,8 @@ function angleToPoint(x1, y1, x2, y2){
 /** Set the walker to a new location */
 function mouseClicked(){
   if(mouseX >= 0 && mouseX <= WIDTH && mouseY >= 0 && mouseY <= HEIGHT){
-    walker.x = mouseX;
-    walker.y = mouseY;
+    //walker.x = mouseX;
+    //walker.y = mouseY;
   }
 }
 

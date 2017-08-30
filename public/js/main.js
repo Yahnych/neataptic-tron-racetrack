@@ -21,7 +21,7 @@ var SCORE_RADIUS     = 100;
 //var PLAYER_AMOUNT    = Math.round(2.3e-4 * WIDTH * HEIGHT);
 var PLAYER_AMOUNT    = 100;
 var ITERATIONS       = 150;
-var MUTATION_RATE    = 0.8;
+var MUTATION_RATE    = 0.3;
 var ELITISM          = Math.round(0.2 * PLAYER_AMOUNT);
 
 // Trained population
@@ -87,7 +87,7 @@ function startEvaluation(){
       //console.log('existed')
       var oldPos = players[v].getPos()
       oldPos =  oldPos ? oldPos : {}
-      var oldScore = players[v].getScore()
+      var oldScore = players[v].getScore() * .8
       //console.log(oldScore, oldPos)
       players.splice(v,1)
       players[v] = new Player(genome, v);
@@ -111,7 +111,7 @@ function startEvaluation(){
           players[v].setPos(oldPos)
 
           //decay
-          players[v].setScore(oldScore * .5)
+          players[v].setScore(oldScore)
         })
       } else {
         oldPos.ax = isNaN(oldPos.ax) ? 0 : oldPos.ax
@@ -122,7 +122,7 @@ function startEvaluation(){
 
         players[v].setPos(oldPos)
         //decay
-        players[v].setScore(oldScore * .5)
+        players[v].setScore(oldScore)
       }
       
       
