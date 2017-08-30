@@ -10,6 +10,8 @@ function Player(genome, v){
   this.brain = genome;
   this.brain.genomeIdx = v;
   this.brain.score = 0;
+  this.brain.lastAngle = 0;
+  this.brain.physicallyStuckCount = 0
 
   players.push(this);
 }
@@ -44,9 +46,11 @@ Player.prototype = {
     var newX = this.x + this.vx;
     var newY = this.y + this.vy;
     if(onTrack(newX,newY) == true){
+      this.brain.physicallyStuckCount = 0
       this.x = newX
       this.y = newY;
     } else {
+      this.brain.physicallyStuckCount = this.brain.physicallyStuckCount + 1
       this.vx = 0
       this.vy = 0
     }
@@ -68,17 +72,32 @@ Player.prototype = {
       })
       
     } else {
-      //console.log('we are on track right now')
-    // Limit position to width and height
-      //this.x = this.x >= WIDTH  ? WIDTH  : this.x <= 0 ? 0 : this.x;
-      //this.y = this.y >= HEIGHT ? HEIGHT : this.y <= 0 ? 0 : this.y;
-      this.x = this.x >= WIDTH  ? (this.x - WIDTH)  : this.x <= 0 ? (WIDTH - this.x) : this.x;
-      this.y = this.y >= HEIGHT  ? (this.y - HEIGHT)  : this.y <= 0 ? (HEIGHT - this.y) : this.y;
+      if(this.brain.physicallyStuckCount >= 5){
+        var that = this
+        findRandomOnTrackPosition(function(result){
+          // Limit position to width and height
+          //this.x = this.x >= WIDTH  ? WIDTH  : this.x <= 0 ? 0 : this.x;
+          //this.y = this.y >= HEIGHT ? HEIGHT : this.y <= 0 ? 0 : this.y;
+          this.vx = 0
+          that.vx = 0
+          that.x = result.x
+          that.y = result.y
+          that.score();  
+        })
+      } else {
+        //console.log('we are on track right now')
+        // Limit position to width and height
+        //this.x = this.x >= WIDTH  ? WIDTH  : this.x <= 0 ? 0 : this.x;
+        //this.y = this.y >= HEIGHT ? HEIGHT : this.y <= 0 ? 0 : this.y;
+        this.x = this.x >= WIDTH  ? (this.x - WIDTH)  : this.x <= 0 ? (WIDTH - this.x) : this.x;
+        this.y = this.y >= HEIGHT  ? (this.y - HEIGHT)  : this.y <= 0 ? (HEIGHT - this.y) : this.y;
 
-      if(this.x == 0 || this.x == WIDTH) this.vx = -this.vx;
-      if(this.y == 0 || this.y == HEIGHT) this.vy = -this.vy;
+        if(this.x == 0 || this.x == WIDTH) this.vx = -this.vx;
+        if(this.y == 0 || this.y == HEIGHT) this.vy = -this.vy;
 
-      this.score();
+        this.score();
+
+      }
 
     }
   },
@@ -103,33 +122,26 @@ Player.prototype = {
 
   /** Calculate fitness of this players genome **/
   score: function(){
-    var dist = distance(this.x, this.y, walker.x, walker.y);
-    if(!isNaN(dist) && dist < SCORE_RADIUS){
-      this.brain.score += SCORE_RADIUS - dist;
-      if(this.brain.score <= 0) this.brain.score = 0
+    var angle = angleToPoint(this.x, this.y, $('#field').width()/2, $('#field').height()/2) + HALF_PI;
+
+    //var dist = distance(this.x, this.y, walker.x, walker.y);
+    //console.log(angle, this.brain.lastAngle)
+    if(!isNaN(this.brain.lastAngle) && !isNaN(angle)){
+      var scoreDelta = (angle - this.brain.lastAngle) * 100
+      //console.log(scoreDelta)
+      this.brain.score += scoreDelta
+
+      this.brain.lastAngle = angle
+      //if(this.brain.score <= 0) this.brain.score = 0
     }
 
     // Replace highest score to visualise
-    highestScore = this.brain.score > highestScore ? this.brain.score : highestScore;
-
-/*
-    if(this.brain.score < (highestScore/2)){
-      //we should die
-      console.log('time to die')
-      //console.log(JSON.stringify(neat.population[0]))
-      //console.log(JSON.stringify(this.brain))
-      //var v = neat.population.indexOf('z')
-      //console.log(v)
-      //genome = genome.getOffspring()
-      this.brain = neat.getOffspring()
-
-      //output = this.brain.activate(input);
-      this.brain.score = highestScore
-      this.x = walker.x
-      this.y = walker.y
-      //this.update()
-    }
-    */
+    //console.log(this.brain.score, highestScore)
+    if(this.brain.score >= highestScore){
+      highestScore = this.brain.score;
+      $('#topScore').html(Math.floor(highestScore * 100)/100)
+    } 
+     
   },
 
   /** Display the player on the field, parts borrowed from the CodingTrain */
@@ -156,17 +168,19 @@ Player.prototype = {
 
   /** Detect and normalize inputs */
   detect: function(){
-    var dist = Math.sqrt(this.x, this.y, walker.x, walker.y) / Math.sqrt(WIDTH**2 + HEIGHT**2);
-    var targetAngle = angleToPoint(this.x, this.y, walker.x, walker.y) / TWO_PI;
+    //var dist = Math.sqrt(this.x, this.y, walker.x, walker.y) / Math.sqrt(WIDTH**2 + HEIGHT**2);
+    var heading = angleToPoint(this.x, this.y, this.vx, this.vy) / TWO_PI;
+    var thisX = this.x
+    var thisY = this.y
     var vx = (this.vx + MAX_SPEED) / MAX_SPEED;
     var vy = (this.vy + MAX_SPEED) / MAX_SPEED;
-    var tvx = (walker.vx + MAX_SPEED) / MAX_SPEED;
-    var tvy = (walker.vy + MAX_SPEED) / MAX_SPEED;
+    //var tvx = (walker.vx + MAX_SPEED) / MAX_SPEED;
+    //var tvy = (walker.vy + MAX_SPEED) / MAX_SPEED;
 
     // NaN checking
-    targetAngle = isNaN(targetAngle) ? 0 : targetAngle;
-    dist = isNaN(dist) ? 0 : dist;
+    //targetAngle = isNaN(targetAngle) ? 0 : targetAngle;
+    //dist = isNaN(dist) ? 0 : dist;
 
-    return [vx, vy, tvx, tvy, targetAngle, dist];
+    return [vx, vy, heading, thisX, thisY];
   },
 };

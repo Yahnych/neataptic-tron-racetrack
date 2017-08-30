@@ -10,6 +10,8 @@ Config.warnings = false;
 /** Settings */
 var WIDTH            = $(window).width();
 var HEIGHT           = $(window).height();
+//var WIDTH = 500;
+//var HEIGHT = 500;
 var MAX_SPEED        = 8;
 var START_X          = WIDTH/2;
 var START_Y          = HEIGHT/2;
@@ -18,8 +20,8 @@ var SCORE_RADIUS     = 100;
 // GA settings
 //var PLAYER_AMOUNT    = Math.round(2.3e-4 * WIDTH * HEIGHT);
 var PLAYER_AMOUNT    = 100;
-var ITERATIONS       = 100;
-var MUTATION_RATE    = 0.5;
+var ITERATIONS       = 150;
+var MUTATION_RATE    = 0.8;
 var ELITISM          = Math.round(0.2 * PLAYER_AMOUNT);
 
 // Trained population
@@ -34,7 +36,7 @@ var players = [];
 /** Construct the genetic algorithm */
 function initNeat(){
   neat = new Neat(
-    6, 2,
+    5, 2,
     null,
     {
       mutation: [
@@ -84,26 +86,50 @@ function startEvaluation(){
     } else {
       //console.log('existed')
       var oldPos = players[v].getPos()
+      oldPos =  oldPos ? oldPos : {}
       var oldScore = players[v].getScore()
       //console.log(oldScore, oldPos)
       players.splice(v,1)
       players[v] = new Player(genome, v);
 
       //fix NaN's
-      oldPos.x = isNaN(oldPos.x) ? 0 : oldPos.x
-      oldPos.y = isNaN(oldPos.y) ? 0 : oldPos.y
-      oldPos.ax = isNaN(oldPos.ax) ? 0 : oldPos.ax
-      oldPos.ay = isNaN(oldPos.ay) ? 0 : oldPos.ay
-      oldPos.vx = isNaN(oldPos.vx) ? 0 : oldPos.vx
-      oldPos.vy = isNaN(oldPos.vy) ? 0 : oldPos.vy
+      if(isNaN(oldPos.x) || isNaN(oldPos.y) ){
+        findRandomOnTrackPosition(function(result){
+          oldPos.x = result.x
+          oldPos.y = result.y
+          oldPos.vx = 0
+          oldPos.vy = 0;
+          oldPos.ax = isNaN(oldPos.ax) ? 0 : oldPos.ax
+          oldPos.ay = isNaN(oldPos.ay) ? 0 : oldPos.ay
+          oldPos.vx = isNaN(oldPos.vx) ? 0 : oldPos.vx
+          oldPos.vy = isNaN(oldPos.vy) ? 0 : oldPos.vy
+
+          if(!players[v]){
+            players[v] = new Player(genome,v)
+            oldScore = 0
+          } 
+          players[v].setPos(oldPos)
+
+          //decay
+          players[v].setScore(oldScore * .5)
+        })
+      } else {
+        oldPos.ax = isNaN(oldPos.ax) ? 0 : oldPos.ax
+        oldPos.ay = isNaN(oldPos.ay) ? 0 : oldPos.ay
+        oldPos.vx = isNaN(oldPos.vx) ? 0 : oldPos.vx
+        oldPos.vy = isNaN(oldPos.vy) ? 0 : oldPos.vy
 
 
-      players[v].setPos(oldPos)
-      players[v].setScore(oldScore * .5)
+        players[v].setPos(oldPos)
+        //decay
+        players[v].setScore(oldScore * .5)
+      }
+      
+      
     }
   }
 
-  walker.reset();
+  //walker.reset();
 }
 
 
@@ -121,9 +147,9 @@ function endEvaluation(){
   averageScore = totalScore / neat.popsize
   //console.log(averageScore,totalScore)
 
-  neat.mutationRate = averageScore <= 1000 ? Math.round((1 - (averageScore/1000)) * 1 * 1000) / 1000 : 0 
+  neat.mutationRate = averageScore <= 10000 ? Math.round((1 - (averageScore/1000)) * 1 * 1000) / 1000 : 0 
 
-  if(neat.mutationRate == 0 && firstConvergence == -1 && neat.generation && totalScore > 10000){
+  if(neat.mutationRate == 0 && firstConvergence == -1 && neat.generation && averageScore > 10000){
     if(neat.generation > 10){
       firstConvergence = neat.generation
       $('#firstConvergence').html(firstConvergence)
@@ -134,7 +160,7 @@ function endEvaluation(){
   for(var genome in neat.population){
     genome = neat.population[genome];
     //genome.score -= genome.nodes.length * SCORE_RADIUS / 10;
-    genome.score -= genome.nodes.length * SCORE_RADIUS / 50;
+    genome.score -= genome.nodes.length / 50;
   }
 
   // Sort the population by score

@@ -1,28 +1,45 @@
 /* Global vars */
 var players = [];
-var walker = new Walker();
+//var walker = new Walker();
 var iteration = 0;
 var highestScore = 0;
 var trackImg;
-var canvas
+var field
 var trackImageCanvas;
 
 /** Setup the canvas */
 function setup(){
-
+  //$('#defaultCanvas0').attr("width", $(window).width())
+  //$('#defaultCanvas0').attr("height", $(window).height())
+  //$('#track').attr('width', WIDTH)
+  //$('#track').attr('height', HEIGHT)
   trackImg = document.getElementById('thisTrack');
-  trackImg.setAttribute('src','tracks/track1.png')
-  canvas = createCanvas(WIDTH, HEIGHT);
-  trackImageCanvas =  createCanvas(WIDTH, HEIGHT);
-  trackImageCanvas.drawingContext.drawImage(trackImg, 0, 0, WIDTH, HEIGHT);
+  trackImg.setAttribute('src','tracks/track2.png')
+  
+  trackImageCanvas = createCanvas($(window).width(),$(window).height());
+  trackImageCanvas.id("canvas1");
   trackImageCanvas.parent('track');
-  canvas.parent('field');
+  //trackImageCanvas.drawingContext.drawImage(trackImg, 0, 0, WIDTH, HEIGHT);
+  trackImageCanvas.drawingContext.drawImage(trackImg, 0, 0, $(window).width(), $(window).height());
+
+  field = createCanvas($(window).width(),$(window).height());
+  
+  //$('#defaultCanvas0').attr('width',WIDTH)
+  //$('#defaultCanvas0').attr('height',HEIGHT)
+  
+  field.parent('field');
+
+
   initNeat();
 
   // Do some initial mutation
   if(!USE_TRAINED_POP){
     for(var i = 0; i < 1; i++) neat.mutate();
   }
+  findRandomOnTrackPosition(function(pos){
+    START_X = pos.x
+    START_Y = pos.y
+  })
 
   startEvaluation();
 }
@@ -50,8 +67,8 @@ function draw(){
     player.show();
   }
 
-  walker.update();
-  walker.show();
+  //walker.update();
+  //walker.show();
   }
   iteration++;
 }
@@ -83,7 +100,7 @@ function squareGrid(){
 }
 
 function renderTrack(){
-  canvas.drawingContext.drawImage(trackImg, 0, 0, WIDTH, HEIGHT);
+  field.drawingContext.drawImage(trackImg, 0, 0,  $(window).width(), $(window).height());
   
 }
 
@@ -142,20 +159,22 @@ function onTrack(thisX,thisY){
   var pixelData = trackImageCanvas.drawingContext.getImageData(thisX, thisY, 1, 1).data;
 
   //console.log(pixelData[3])
-  if(pixelData[3] == 0){
-    return false
-  } else {
+  if(pixelData[0] == 0 && pixelData[1] == 0 && pixelData[2] == 0 && pixelData[3] == 255){
     return true
+  } else {
+    return false
   }
 }
 
 function findRandomOnTrackPosition(callback){
-  var thisX = Math.floor(Math.random() * WIDTH)
-  var thisY = Math.floor(Math.random() * HEIGHT)
+  var thisX = Math.floor(Math.random() *  $(window).width())
+  var thisY = Math.floor(Math.random() * $(window).height())
   if(onTrack(thisX, thisY) == true){
-    callback({"x":thisX, "y":thisY})
+    callback({"x": thisX, "y":thisY})
   } else {
-
-    findRandomOnTrackPosition(callback)
+    setTimeout(function(){
+      findRandomOnTrackPosition(callback)  
+    },1)
+    
   }
 }
